@@ -30,11 +30,13 @@
 #include <string.h>
 
 #include "log.h"
+#include "utils.h"
+#include "syspatch.h"
 #include "tinyui.h"
 
 #define A( color ) ( unsigned char )( color >> 24 )
 
-static int p_width, p_height, buffer_width, pixel_format, end = 1;
+static int buffer_width, pixel_format, end = 1;
 static unsigned int * vram = NULL;
 
 inline void blendColorPixel( unsigned int * pixel, unsigned int color )
@@ -61,23 +63,34 @@ inline void blendColorPixel( unsigned int * pixel, unsigned int color )
 	*pixel = c1 + c2 + color;
 }
 
+int ( * getFrameBuf )( void ** topaddr, int * bufferwidth, int * pixelformat, int * unk1 );
+int ( * waitVblank )( void );
+
 int initTinyUi()
 {
-	int unk;
-	sceDisplayGetMode( &unk, &p_width, &p_height );
-	sceDisplayGetFrameBuf( ( void ** )&vram, &buffer_width, &pixel_format, 0 );
-	vram = ( unsigned int * )( ( unsigned int )vram | 0x40000000 );
+	unsigned int nid[2];
+	getDisplayNids( nid );
+	getFrameBuf = ( void * )findProc( "sceDisplay_Service", "sceDisplay_driver", nid[0] );
+	waitVblank = ( void * )findProc( "sceDisplay_Service", "sceDisplay_driver", nid[1] );
+	getFrameBuf( ( void ** )&vram, &buffer_width, &pixel_format, NULL );
 	if ( buffer_width == 0 || pixel_format != PSP_DISPLAY_PIXEL_FORMAT_8888 )
 		return -1;
 	return 0;
 }
 
+void updateFrameBuf()
+{
+	getFrameBuf( ( void ** )&vram, &buffer_width, &pixel_format, NULL );
+	vram = ( unsigned int * )( ( unsigned int )vram | 0x40000000 );
+}
+
+RawImageBlitParams * opts;
+
 int blit_thread( SceSize args, void *argp )
 {
-	RawImageBlitParams * opts = ( RawImageBlitParams * )( *( unsigned int * )argp );
 	while( opts->sema )
 	{
-		initTinyUi();
+		updateFrameBuf();
 		int i, j;
 		for( i = 0; i < opts->width; i ++ )
 		{
@@ -86,7 +99,7 @@ int blit_thread( SceSize args, void *argp )
 				blendColorPixel( vram + ( opts->y + j ) * buffer_width + opts->x + i, opts->data[j * opts->width + i] );
 			}
 		}
-		sceDisplayWaitVblank();
+		waitVblank();
 	}
 	end = 1;
 	return sceKernelExitDeleteThread( 0 );
@@ -96,12 +109,13 @@ int blitRawImage( RawImageBlitParams * params )
 {
 	while ( !end )
 	{
-		sceDisplayWaitVblank();
+		waitVblank();
 	}
 	end = 0;
 	params->sema = 1;
-	int bth_id = sceKernelCreateThread("blit_thread", blit_thread, 0x4, 0x200, 0, NULL);
+	opts = params;
+	int bth_id = sceKernelCreateThread("blit_thread", blit_thread, 0xa, 0x800, 0, NULL);
 	if( bth_id >= 0 )
-		sceKernelStartThread( bth_id, 4, &params );
+		sceKernelStartThread( bth_id, 0, NULL );
 	return 0;
 }

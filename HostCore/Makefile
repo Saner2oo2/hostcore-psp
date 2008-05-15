@@ -45,21 +45,22 @@ clean-release:
 	rm -rf HostCore_1.1.tar.gz
 	rm -rf release
 
-release: wifi usb launcher clean all clean-release
+release: wifi usb launcher-eboot clean all clean-release
 	mkdir release
 	cp -r extras release/HostCore
 	mv release/HostCore/readme.txt release/
 	mv release/HostCore/readme.rtf release/
-	cp readme.txt release/
 	cp hostcore.prx release/HostCore/
 	cp usbhostfs/usbhostfs.prx release/HostCore/
 	cp wifiuser/wifiuser.prx release/HostCore/
 	cp launcher/EBOOT.PBP release/HostCore/launcher.pbp
+	rm -rf release/HostCore/.svn
+	rm -rf release/HostCore/resources/.svn
 	find release -type f -name '.*' -exec rm -f {} \;
 	find release -type d -name '.*' -exec rm -rf {} \;
 	tar czf HostCore_1.1.tar.gz release/
 	
-launcher:
+launcher-eboot:
 	$(MAKE) -C launcher clean
 	$(MAKE) -C launcher all
 
