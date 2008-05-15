@@ -39,7 +39,7 @@ int ( * getDevkitVersion )( void );
 
 void initPatches()
 {
-	getDevkitVersion = ( void * )findProc( "sceSystemMemoryManager", "SysMemForKernel", 0x3fc9Ae6a );
+	getDevkitVersion = ( void * )findProc( "sceSystemMemoryManager", "SysMemForKernel", 0x3fc9ae6a );
 	if ( !getDevkitVersion )
 		getDevkitVersion = ( void * )findProc( "sceSystemMemoryManager", "SysMemForKernel", 0xee1718bc );
 	fw_version = getDevkitVersion();
@@ -93,6 +93,20 @@ void getUtilsNids( unsigned int * nid )
 unsigned int getKillMutexNid()
 {
 	return 0xf8170fbe;
+}
+
+void getDisplayNids( unsigned int * nid )
+{
+	if ( fw_version == FW_371 )
+	{
+		nid[0] = 0xe56b11ba;
+		nid[1] = 0x7fba941a;
+	}
+	else if ( fw_version == FW_380 || fw_version == FW_390 )
+	{
+		nid[0] = 0x3749cda0;
+		nid[1] = 0xc89e1f1d;
+	}
 }
 
 void patchMemPartitionInfo()

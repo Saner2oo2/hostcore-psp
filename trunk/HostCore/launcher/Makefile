@@ -25,6 +25,7 @@ SRCS			= main.c
 OBJS			= $(SRCS:.c=.o)
 
 PSP_FW_VERSION	= 390
+BUILD_PRX		= 1
 
 INCDIR			= 
 LIBDIR			=

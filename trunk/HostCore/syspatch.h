@@ -34,6 +34,8 @@ extern void getUtilsNids( unsigned int * nid );
 
 extern unsigned int getKillMutexNid();
 
+extern void getDisplayNids( unsigned int * nid );
+
 extern void patchMemPartitionInfo();
 
 extern void restoreLoadExecVSHCommon();

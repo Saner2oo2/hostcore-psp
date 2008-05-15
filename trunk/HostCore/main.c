@@ -650,6 +650,7 @@ int main_thread( SceSize args, void *argp )
 	blit_opts.height = 30;
 	blit_opts.x = 195;
 	blit_opts.y = 121;
+	initTinyUi();
 	ctrl_previous = setCtrlReadHandler( onCtrlRead );
 	while ( 1 )
 	{
