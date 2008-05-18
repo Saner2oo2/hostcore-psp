@@ -32,7 +32,6 @@
 #define NOP	0x00000000
 #define MAKE_JUMP( a, f ) _sw( J_OPCODE | ( ( ( unsigned int )( f ) & 0x0ffffffc ) >> 2 ), a )
 #define MAKE_CALL( a, f ) _sw( JAL_OPCODE | ( ( ( unsigned int )( f ) >> 2 )  & 0x03ffffff ), a )
-#define sceKernelExitVSHVSH sceKernelExitVSH
 
 enum PspModel
 {
@@ -143,6 +142,8 @@ extern int loadStartUserModule( char * file, int argc, char ** argv );
 
 extern int getRegistryValue( const char * dir, const char * name, unsigned int * val );
 
+extern void exitVshWithError( unsigned int err );
+
 extern void initUtils();
 
 extern void ( * setUmdFile )( const char * file );
@@ -158,8 +159,6 @@ extern int ( * setInitFileName )( char * file );
 extern int ( * mountUmdFromFile )( char * file, int noumd, int isofs );
 
 extern void ( * unmountUmd )( void );
-
-extern int ( * sceKernelExitVSH )( struct SceKernelLoadExecVSHParam *param );
 
 extern int ( * sceKernelUnregisterExitCallback )( void );
 

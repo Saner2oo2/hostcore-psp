@@ -74,9 +74,9 @@ int loadStartModulePartition( int pid, char * file, int argc, char ** argv )
 int main( int argc, char ** argv )
 {
 	char * mode = ( char * )0x09000000;
-	char * umd = ( char * )0x09000010;
+	char * exec = ( char * )0x09000010;
 	strcpy( mode, argv[1] );
-	strcpy( umd, argv[2] );
+	strcpy( exec, argv[2] );
 	loadStartModulePartition( 1, "ms0:/HostCore/hostcore.prx", 0, NULL );
 	return sceKernelExitDeleteThread( 0 );
 }

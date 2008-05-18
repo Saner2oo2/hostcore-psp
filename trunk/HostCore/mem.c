@@ -47,8 +47,7 @@ void * memAlloc( int size, int partition )
 		return NULL;
 	}
 	block_ptr[count] = sceKernelGetBlockHeadAddr( block_id[count] );
-	count ++;
-	return block_ptr[count];
+	return block_ptr[count ++];
 }
 
 int memFree( void * ptr )

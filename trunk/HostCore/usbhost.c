@@ -60,7 +60,7 @@ int startUsbHost()
 		return -1;
 	}
 	ret = sceUsbActivate( HOSTFSDRIVER_PID );
-	sceKernelDelayThread( 1000000 );
+	sceKernelDelayThread( 1500000 );
 	return ret;
 }
 

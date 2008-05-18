@@ -103,7 +103,7 @@ CtrlReadHandler ctrl_previous = NULL;
 HostCoreConf hc_conf;
 static int init_key;
 static int host_mode = 0;
-static char umd[128];
+static char exec[128];
 
 static int isRedirected( PspIoDrvFileArg * arg )
 {
@@ -591,7 +591,7 @@ int exitCallback( int arg1, int arg2, void * common )
 	initUmdImageDriver();
 	restoreIoDrv();
 	stopHost( host_mode );
-	sceKernelExitVSHVSH( NULL );
+	exitVshWithError( 0 );
 	return 0;
 }
 
@@ -621,13 +621,33 @@ int main_thread( SceSize args, void *argp )
 		startHost( host_mode );
 		patchHostDrv();
 		killModule( "HostCore_launcher" );
-		initUmdImageDriver();
-		mountUmdImage( umd );
-		sceKernelDelayThread( 500000 );
-		int ret = launchUmdImage();
+		int ret = -1;
+		if ( strcmp( &exec[strlen( exec ) - 4], ".PBP" ) == 0 )
+		{
+			int ( * sceKernelLoadModuleForLoadExecVSHMs2 )( const char * file, int flags, SceKernelLMOption * option );
+			sceKernelLoadModuleForLoadExecVSHMs2 = ( void * )findProc( "sceModuleManager", "ModuleMgrForKernel", 0x797989af );
+			ret = sceKernelLoadModuleForLoadExecVSHMs2( "fatms0:/gpsp/EBOOT.PBP", 0, NULL );
+			log( "loadexec ret %08x\n", ret );
+			if ( ret >= 0 )
+			{
+				int status, len = strlen( exec ) + 1;
+				ret = sceKernelStartModule( ret, len, ( void * )exec, &status, NULL );
+				log( "start ret %08x\n", ret );
+			}
+		}
+		else
+		{
+			initUmdImageDriver();
+			mountUmdImage( exec );
+			sceKernelDelayThread( 500000 );
+			ret = launchUmdImage();
+		}
 		if ( ret < 0 )
 		{
-			exitCallback( 0, 0, NULL );
+			initUmdImageDriver();
+			restoreIoDrv();
+			stopHost( host_mode );
+			exitVshWithError( ret );
 		}
 		int cbid;
 		while( ( cbid = sceKernelCheckExitCallback() ) == 0 )
@@ -732,6 +752,24 @@ int LoadExecVSHCommon_new( int apitype, char * file, struct SceKernelLoadExecVSH
 		}
 		sceIoClose( fd );
 	}
+	else if ( host_mode )
+	{
+		restoreIoDrv();
+		stopHost( host_mode );
+		int fd = sceIoOpen( file, PSP_O_RDONLY, 0644 );
+		if ( fd < 0 )
+		{
+			char args[256];
+			char * argv[3];
+			argv[0] = LAUNCHER;
+			argv[1] = ( char * )mode_str[host_mode];
+			argv[2] = file;
+			param->args = buildArgs( args, 3, argv );
+			param->argp = args;
+			return LoadExecVSHCommon( 0x141, LAUNCHER, param, 0x00010000 );
+		}
+		sceIoClose( fd );
+	}
 	return LoadExecVSHCommon( apitype, file, param, unk2 );
 }
 
@@ -748,9 +786,9 @@ int module_start( SceSize args, void *argp )
 	{
 		patchMemPartitionInfo();
 		char * h_mode = ( char * )0x09000000;
-		char * f_umd = ( char * )0x09000010;
-		log( "mode %s, umd %s\n", h_mode, f_umd );
-		strcpy( umd, f_umd );
+		char * f_exec = ( char * )0x09000010;
+		log( "mode %s, exec %s\n", h_mode, f_exec );
+		strcpy( exec, f_exec );
 		if ( !strncmp( h_mode, mode_str[1], 3 ) )
 		{
 			host_mode = D_USB;
