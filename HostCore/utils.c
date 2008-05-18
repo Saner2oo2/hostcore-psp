@@ -34,6 +34,7 @@
 #include <string.h>
 
 #include "utils.h"
+#include "mem.h"
 #include "syspatch.h"
 #include "log.h"
 
@@ -474,6 +475,27 @@ int ( * sceKernelExitVSH )( struct SceKernelLoadExecVSHParam *param );
 int ( * sceKernelUnregisterExitCallback )( void );
 int ( * sceKernelCheckExitCallback )( void );
 int ( * sceKernelLoadModuleForLoadExecVSHDisc )( const char * file, int flags, SceKernelLMOption * option );
+
+void exitVshWithError( unsigned int err )
+{
+	if ( err == 0 )
+		sceKernelExitVSH( NULL );
+	struct SceKernelLoadExecVSHParam param;
+	unsigned int vsh_args[8];
+	memset( &param, 0, sizeof( struct SceKernelLoadExecVSHParam ) );
+	memset( vsh_args, 0, 0x20 );
+	
+	vsh_args[0] = 0x400;
+	vsh_args[1] = 0x20;
+	vsh_args[5] = err;
+	
+	param.size = sizeof( struct SceKernelLoadExecVSHParam );
+	param.args = 0x400;
+	param.argp = vsh_args;
+	param.vshmain_args_size = 0x400;
+	param.vshmain_args = vsh_args;
+	sceKernelExitVSH( &param );
+}
 
 void initUtils()
 {
