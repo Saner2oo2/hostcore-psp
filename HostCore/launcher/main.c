@@ -78,5 +78,6 @@ int main( int argc, char ** argv )
 	strcpy( mode, argv[1] );
 	strcpy( exec, argv[2] );
 	loadStartModulePartition( 1, "ms0:/HostCore/hostcore.prx", 0, NULL );
-	return sceKernelExitDeleteThread( 0 );
+	int status;
+	return sceKernelStopUnloadSelfModule( 0, NULL, &status, NULL );
 }

@@ -37,24 +37,25 @@ int fw_version = FW_371;
 
 int ( * getDevkitVersion )( void );
 
-void initPatches()
+int initPatches( void )
 {
-	getDevkitVersion = ( void * )findProc( "sceSystemMemoryManager", "SysMemForKernel", 0x3fc9ae6a );
-	if ( !getDevkitVersion )
-		getDevkitVersion = ( void * )findProc( "sceSystemMemoryManager", "SysMemForKernel", 0xee1718bc );
+	getDevkitVersion = ( void * )findProc( "sceSystemMemoryManager", "SysMemUserForUser", 0x3FC9AE6A );
 	fw_version = getDevkitVersion();
+	return fw_version;
 }
 
-unsigned int getFindDriverAddr()
+unsigned int getFindDriverAddr( void )
 {
 	tSceModule * pMod = ( tSceModule * )sceKernelFindModuleByName( "sceIOFileManager" );
 	unsigned int addr = 0;
 	if ( !pMod )
 		return 0;
 	if ( fw_version == FW_371 )
-		addr = pMod->text_addr + 0x2844;
+		addr = pMod->text_addr + 0x00002844;
 	else if ( fw_version == FW_380 || fw_version == FW_390 )
-		addr = pMod->text_addr + 0x2808;
+		addr = pMod->text_addr + 0x00002808;
+	else if ( fw_version == FW_401 )
+		addr = pMod->text_addr + 0x000027EC;
 	return addr;
 }
 
@@ -70,6 +71,11 @@ void getCtrlNids( unsigned int * nid )
 		nid[0] = 0xad0510f6;
 		nid[1] = 0xd65d4e9a;
 	}
+	else if ( fw_version == FW_401 )
+	{
+		nid[0] = 0xBA664B5E;
+		nid[1] = 0x591B3F36;
+	}
 }
 
 void getUtilsNids( unsigned int * nid )
@@ -79,15 +85,25 @@ void getUtilsNids( unsigned int * nid )
 		nid[0] = 0xa3d5e142; //sceKernelExitVSHVSH
 		nid[1] = 0xd9739b89; //sceKernelUnregisterExitCallback
 		nid[2] = 0x659188e1; //sceKernelCheckExitCallback
-		nid[3] = 0xa1a78C58; //sceKernelLoadModuleForLoadExecVSHDisc
+		nid[3] = 0x49C5B9E1; //sceKernelLoadModuleForLoadExecVSHMs2
+		nid[4] = 0xa1a78C58; //sceKernelLoadModuleForLoadExecVSHDisc
 	}
 	else if ( fw_version == FW_380 || fw_version == FW_390 )
 	{
 		nid[0] = 0x62879ad8;
 		nid[1] = 0xf1c99c38;
 		nid[2] = 0x753ef37c;
-		nid[3] = 0xc8f0090d;
-	} 
+		nid[3] = 0x42ED1407;
+		nid[4] = 0xc8f0090d;
+	}
+	else if ( fw_version == FW_401 )
+	{
+		nid[0] = 0xCA8011A2;
+		nid[1] = 0x5AF87B62;
+		nid[2] = 0x6274D0D5;
+		nid[3] = 0x313F2757;
+		nid[4] = 0x313F2757;
+	}
 }
 
 unsigned int getKillMutexNid()
@@ -107,6 +123,11 @@ void getDisplayNids( unsigned int * nid )
 		nid[0] = 0x3749cda0;
 		nid[1] = 0xc89e1f1d;
 	}
+	else if ( fw_version == FW_401 )
+	{
+		nid[0] = 0xC28EFAA7;
+		nid[1] = 0xC922270C;
+	}
 }
 
 void patchMemPartitionInfo()
@@ -114,7 +135,16 @@ void patchMemPartitionInfo()
 	sceKernelSetDdrMemoryProtection( ( void * )0x88300000, 0x00100000, 0xf );
 	tSceModule * pMod = ( tSceModule * )sceKernelFindModuleByName( "sceSystemMemoryManager" );
 	// 0x02001021 move $v0 $s0
-	_sw( 0x02001021, pMod->text_addr + 0x00001304 ); //for 3.71, 3.80, 3.90
+	int offset = 0x00001304;
+	if ( fw_version == FW_371 || fw_version == FW_380 || fw_version == FW_390 )
+	{
+		offset = 0x00001304; //for 3.71, 3.80, 3.90
+	}
+	else if ( fw_version == FW_401 )
+	{
+		offset = 0x00003A68; //for 4.01
+	}
+	_sw( 0x02001021, pMod->text_addr + offset );
 	sceKernelIcacheInvalidateAll();
 	sceKernelDcacheWritebackInvalidateAll();
 	PspSysmemPartitionInfo info;
@@ -124,7 +154,7 @@ void patchMemPartitionInfo()
 	p_info->startaddr = 0x08300000;
 	p_info->attr = 0xf;
 	//restore
-	_sw( 0x00001021, pMod->text_addr + 0x00001304 ); //for 3.71, 3.80, 3.90
+	_sw( 0x00001021, pMod->text_addr + offset );
 	sceKernelIcacheInvalidateAll();
 	sceKernelDcacheWritebackInvalidateAll();
 }
@@ -152,6 +182,8 @@ void * patchLoadExecVSHCommon( void * func )
 		LoadExecVSHCommon_ori[0].addr = pMod->text_addr + 0x0000121c; //same in standare/slim
 	else if ( fw_version == FW_380 || fw_version == FW_390 )
 		LoadExecVSHCommon_ori[0].addr = pMod->text_addr + 0x000014cc; //same in standare/slim
+	else if ( fw_version == FW_401 )
+		LoadExecVSHCommon_ori[0].addr = pMod->text_addr + 0x00001D7C; //same in standare/slim
 	LoadExecVSHCommon_ori[1].addr = LoadExecVSHCommon_ori[0].addr + 4;
 	LoadExecVSHCommon_ori[0].val = _lw( LoadExecVSHCommon_ori[0].addr );
 	LoadExecVSHCommon_ori[1].val = _lw( LoadExecVSHCommon_ori[1].addr );

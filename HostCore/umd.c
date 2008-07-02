@@ -114,7 +114,7 @@ void mountUmdImage( char * file )
 			break;
 		}
 	}
-	int stat = sceUmdCheckMedium( 0 );
+	int stat = sceUmdCheckMedium();
 	if ( stat == 0 )
 	{
 		log( "no media\n" );

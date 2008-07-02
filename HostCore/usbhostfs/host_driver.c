@@ -472,8 +472,7 @@ static int io_ioctl(PspIoDrvFileArg *arg, unsigned int cmdno, void *indata, int 
 	{
 		MODPRINTF("%s: Error PC side not connected\n", __FUNCTION__);
 	}
-	if ( ret < 0 )
-		ret = 0;
+	
 	return ret;
 }
 

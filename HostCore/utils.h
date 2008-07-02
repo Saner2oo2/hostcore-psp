@@ -44,6 +44,7 @@ enum PspFwVersion
 	FW_371 = 0x03070110,
 	FW_380 = 0x03080010,
 	FW_390 = 0x03090010,
+	FW_401 = 0x04000110,
 };
 
 typedef struct tSceModule
@@ -163,6 +164,8 @@ extern void ( * unmountUmd )( void );
 extern int ( * sceKernelUnregisterExitCallback )( void );
 
 extern int ( * sceKernelCheckExitCallback )( void );
+
+extern int ( * sceKernelLoadModuleForLoadExecVSHMs2 )( const char * file, int flags, SceKernelLMOption * option );
 
 extern int ( * sceKernelLoadModuleForLoadExecVSHDisc )( const char * file, int flags, SceKernelLMOption * option );
 

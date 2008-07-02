@@ -385,7 +385,8 @@ int loadStartModule( char * file, int argc, char ** argv )
 		log( "start module %08x ret %08x\n", modid, ret );
 		if ( ret < 0 )
 		{
-			int res = sceKernelUnloadModule( modid );
+			int res = -1;
+			res = sceKernelUnloadModule( modid );
 			log( "unload: %08x\n", res );
 			return ret;
 		}
@@ -400,7 +401,7 @@ int loadStartModulePartition( int pid, char * file, int argc, char ** argv )
 	option.size = sizeof(option);
 	option.mpidtext = pid;
 	option.mpiddata = pid;
-	option.position = 0;
+	option.position = pid == 4? PSP_SMEM_High: PSP_SMEM_Low;
 	option.access = 1;
 	int modid = sceKernelLoadModule( file, 0, &option );
 	log( "load module %s %08x\n", file, modid );
@@ -415,7 +416,8 @@ int loadStartModulePartition( int pid, char * file, int argc, char ** argv )
 		log( "start module %08x ret %08x\n", modid, ret );
 		if ( ret < 0 )
 		{
-			int res = sceKernelUnloadModule( modid );
+			int res = -1;
+			res = sceKernelUnloadModule( modid );
 			log( "unload: %08x\n", res );
 			return ret;
 		}
@@ -474,6 +476,7 @@ void ( * unmountUmd )( void );
 int ( * sceKernelExitVSH )( struct SceKernelLoadExecVSHParam *param );
 int ( * sceKernelUnregisterExitCallback )( void );
 int ( * sceKernelCheckExitCallback )( void );
+int ( * sceKernelLoadModuleForLoadExecVSHMs2 )( const char * file, int flags, SceKernelLMOption * option );
 int ( * sceKernelLoadModuleForLoadExecVSHDisc )( const char * file, int flags, SceKernelLMOption * option );
 
 void exitVshWithError( unsigned int err )
@@ -497,6 +500,44 @@ void exitVshWithError( unsigned int err )
 	sceKernelExitVSH( &param );
 }
 
+/*typedef struct PBPHeader
+{
+   char signature[4];
+   int version;
+   int offset[8];
+} PBPHeader;
+
+int loadStartPBP( const char * file )
+{
+	PBPHeader pbp;
+	memset( &pbp, 0, sizeof( PBPHeader ) );
+	int fd = sceIoOpen( file, PSP_O_RDONLY, 0644 );
+	if ( fd < 0 )
+		return -3;
+	sceIoRead( fd, &pbp, sizeof( PBPHeader ) );
+	int size = pbp.offset[7] - pbp.offset[6];
+	int pbp_size = 64 - size % 64 + size;
+	void * pbp_buf = memAlloc( pbp_size, 2 );
+	memset( pbp_buf, 0, pbp_size );
+	sceIoLseek( fd, pbp.offset[6], PSP_SEEK_SET );
+	sceIoRead( fd, pbp_buf, size );
+	sceIoClose( fd );
+	int ( * sceKernelLoadModuleBuffer )( SceSize bufsize, void *buf, int flags, SceKernelLMOption *option );
+	sceKernelLoadModuleBuffer = ( void * )findProc( "sceModuleManager", "ModuleMgrForKernel", 0x96817B71 );
+	int ret = sceKernelLoadModuleBuffer( pbp_size, pbp_buf, 0, NULL );
+	//int ( * sceKernelLoadModuleBufferForLoadExecBufferVSHUsbWlan )( void *buf, SceSize bufsize, int flags, SceKernelLMOption *option );
+	//sceKernelLoadModuleBufferForLoadExecBufferVSHUsbWlan = ( void * )findProc( "sceModuleManager", "ModuleMgrForKernel", 0x1F0F8DF2 );
+	//int ret = sceKernelLoadModuleBufferForLoadExecBufferVSHUsbWlan( pbp_buf, pbp_size, 0, NULL );
+	log( "loadexec ret %08x\n", ret );
+	if ( ret >= 0 )
+	{
+		int status, len = strlen( file ) + 1;
+		ret = sceKernelStartModule( ret, len, ( void * )file, &status, NULL );
+		log( "start ret %08x\n", ret );
+	}
+	return ret;
+}*/
+
 void initUtils()
 {
 	setUmdFile = ( void * )findProc( "SystemControl", "SystemCtrlForKernel", 0xB64186D0 );
@@ -507,10 +548,11 @@ void initUtils()
 	unmountUmd = ( void * )findProc( "SystemControl", "SystemCtrlForKernel", 0x512e0cd8 );
 	getCfwConfig = ( void * )findProc( "SystemControl", "SystemCtrlForKernel", 0x16c3b7ee );
 	
-	unsigned int nid[4];
+	unsigned int nid[5];
 	getUtilsNids( nid );
 	sceKernelExitVSH = ( void * )findProc( "sceLoadExec", "LoadExecForKernel", nid[0] );
 	sceKernelUnregisterExitCallback = ( void * )findProc( "sceLoadExec", "LoadExecForKernel", nid[1] );
 	sceKernelCheckExitCallback = ( void * )findProc( "sceLoadExec", "LoadExecForKernel", nid[2] );
-	sceKernelLoadModuleForLoadExecVSHDisc = ( void * )findProc( "sceModuleManager", "ModuleMgrForKernel", nid[3] );
+	sceKernelLoadModuleForLoadExecVSHMs2 = ( void * )findProc( "sceModuleManager", "ModuleMgrForKernel", nid[3] );
+	sceKernelLoadModuleForLoadExecVSHDisc = ( void * )findProc( "sceModuleManager", "ModuleMgrForKernel", nid[4] );
 }
