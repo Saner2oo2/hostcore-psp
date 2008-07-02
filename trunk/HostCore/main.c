@@ -186,6 +186,11 @@ int msIoOpen_new( PspIoDrvFileArg * arg, char * file, int flags, SceMode mode )
 	int ret = msIoOpen( arg, file, flags, mode );
 	if ( ret < 0 && ( flags & PSP_O_WRONLY ) == 0 )
 	{
+		while( init_key == PSP_INIT_KEYCONFIG_POPS && !host_drv )
+		{
+			log( "waiting for host %s\n", file );
+			sceKernelDelayThread( 1000000 );
+		}
 		PspIoDrvArg * drv = arg->drv;
 		arg->drv = host_drv;
 		ret = hostfsIoOpen( arg, file, flags, mode );
@@ -263,6 +268,8 @@ int msIoIoctl_new( PspIoDrvFileArg * arg, unsigned int cmd, void * indata, int i
 		arg->drv = host_drv;
 		int ret = hostfs_drv->funcs->IoIoctl( arg, cmd, indata, inlen, outdata, outlen );
 		arg->drv = drv;
+		if ( ret < 0 )
+			ret = 0;
 		return ret;
 	}
 	return msIoIoctl( arg, cmd, indata, inlen, outdata, outlen );
@@ -273,6 +280,11 @@ int msIoDopen_new( PspIoDrvFileArg * arg, const char * dirname )
 	int ret = msIoDopen( arg, dirname );
 	if ( ret < 0 )
 	{
+		while( init_key == PSP_INIT_KEYCONFIG_POPS && !host_drv )
+		{
+			log( "waiting for host %s\n", dirname );
+			sceKernelDelayThread( 1000000 );
+		}
 		log( "dopen %s\n", dirname );
 		while ( init_key == PSP_INIT_KEYCONFIG_GAME && !host_drv )
 			sceKernelDelayThread( 50000 );
@@ -385,6 +397,11 @@ int msIoGetstat_new( PspIoDrvFileArg * arg, const char * file, SceIoStat * stat 
 	if ( ret < 0 )
 	{
 		log( "getstat %s\n", file );
+		while( init_key == PSP_INIT_KEYCONFIG_POPS && !host_drv )
+		{
+			log( "waiting for host %s\n", file );
+			sceKernelDelayThread( 1000000 );
+		}
 		while ( init_key == PSP_INIT_KEYCONFIG_GAME && !host_drv )
 			sceKernelDelayThread( 50000 );
 		PspIoDrvArg * drv = arg->drv;
@@ -622,11 +639,10 @@ int main_thread( SceSize args, void *argp )
 		patchHostDrv();
 		killModule( "HostCore_launcher" );
 		int ret = -1;
-		if ( strcmp( &exec[strlen( exec ) - 4], ".PBP" ) == 0 )
+		if ( strcmp( &exec[strlen( exec ) - 9], "EBOOT.PBP" ) == 0 )
 		{
-			int ( * sceKernelLoadModuleForLoadExecVSHMs2 )( const char * file, int flags, SceKernelLMOption * option );
-			sceKernelLoadModuleForLoadExecVSHMs2 = ( void * )findProc( "sceModuleManager", "ModuleMgrForKernel", 0x797989af );
-			ret = sceKernelLoadModuleForLoadExecVSHMs2( "fatms0:/gpsp/EBOOT.PBP", 0, NULL );
+			setInitFileName( exec );
+			ret = sceKernelLoadModuleForLoadExecVSHMs2( exec, 0, NULL );
 			log( "loadexec ret %08x\n", ret );
 			if ( ret >= 0 )
 			{
@@ -732,55 +748,56 @@ int ( * LoadExecVSHCommon )( int apitype, char * file, struct SceKernelLoadExecV
 int LoadExecVSHCommon_new( int apitype, char * file, struct SceKernelLoadExecVSHParam * param, int unk2 )
 {
 	restoreLoadExecVSHCommon();
-	if ( strncmp( file, "disc0", 5 ) == 0 && host_mode )
+	if ( host_mode )
 	{
 		restoreIoDrv();
 		stopHost( host_mode );
-		char * umd_file = getUmdFile();
-		int fd = sceIoOpen( umd_file, PSP_O_RDONLY, 0644 );
-		if ( fd < 0 )
+		char args[256];
+		char * argv[3];
+		argv[0] = LAUNCHER;
+		argv[1] = ( char * )mode_str[host_mode];
+		argv[2] = NULL;
+		if ( strncmp( file, "disc0", 5 ) == 0 )
 		{
-			char args[256];
-			char * argv[3];
-			argv[0] = LAUNCHER;
-			argv[1] = ( char * )mode_str[host_mode];
-			argv[2] = umd_file;
+			char * umd_file = getUmdFile();
+			int fd = sceIoOpen( umd_file, PSP_O_RDONLY, 0644 );
+			if ( fd < 0 )
+			{
+				argv[2] = umd_file;
+				setUmdFile( "ms0:/HostCore/resources/fake.iso" );
+			}
+			sceIoClose( fd );
+		}
+		else
+		{
+			int fd = sceIoOpen( file, PSP_O_RDONLY, 0644 );
+			if ( fd < 0 )
+			{
+				argv[2] = file;
+			}
+			sceIoClose( fd );
+		}
+		if ( argv[2] )
+		{
 			param->args = buildArgs( args, 3, argv );
 			param->argp = args;
-			setUmdFile( "ms0:/HostCore/resources/fake.iso" );
 			return LoadExecVSHCommon( 0x141, LAUNCHER, param, 0x00010000 );
 		}
-		sceIoClose( fd );
-	}
-	else if ( host_mode )
-	{
-		restoreIoDrv();
-		stopHost( host_mode );
-		int fd = sceIoOpen( file, PSP_O_RDONLY, 0644 );
-		if ( fd < 0 )
-		{
-			char args[256];
-			char * argv[3];
-			argv[0] = LAUNCHER;
-			argv[1] = ( char * )mode_str[host_mode];
-			argv[2] = file;
-			param->args = buildArgs( args, 3, argv );
-			param->argp = args;
-			return LoadExecVSHCommon( 0x141, LAUNCHER, param, 0x00010000 );
-		}
-		sceIoClose( fd );
 	}
 	return LoadExecVSHCommon( apitype, file, param, unk2 );
 }
 
 int module_start( SceSize args, void *argp )
 {
-	if ( sceKernelDevkitVersion() < FW_371 )
+	if ( initPatches() < FW_371 )
+	{
+		log( "Not supported firmware version!\n" );
 		return 0;
+	}
 	sceIoAssign("ms0:", "msstor0p1:", "fatms0:", IOASSIGN_RDWR, NULL, 0);
-	initPatches();
 	initUtils();
 	init_key = sceKernelInitKeyConfig();
+	log( "init_key %08x\n", init_key );
 	readConf( &hc_conf );
 	if ( init_key == PSP_INIT_KEYCONFIG_GAME )
 	{

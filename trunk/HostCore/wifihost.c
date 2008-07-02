@@ -591,7 +591,7 @@ int stopWifiHost()
 int startWifiHost( const char * name, HostCoreConf * config )
 {	
 	init_key = sceKernelInitKeyConfig();
-	int pid = 2, bid = -1;
+	int pid = 2;
 	char * argv[4];
 	
 	strcpy( drv_name, name? name: "host" );
@@ -620,7 +620,6 @@ int startWifiHost( const char * name, HostCoreConf * config )
 	{
 		wifiModulesPatch1();
 		pid = 4;
-		bid = sceKernelAllocPartitionMemory( 4, "take_space", PSP_SMEM_Low, 0x80000, NULL );
 	}
 	ret = loadStartModulePartition( pid, "flash0:/kd/pspnet.prx", 0, NULL );
 	if ( ret < 0 )
@@ -668,7 +667,6 @@ int startWifiHost( const char * name, HostCoreConf * config )
 	if ( init_key == PSP_INIT_KEYCONFIG_GAME )
 	{
 		wifiModulesPatch3();
-		sceKernelFreePartitionMemory( bid );
 	}
 	
 	if ( ctrl_opts->inited < 0 )

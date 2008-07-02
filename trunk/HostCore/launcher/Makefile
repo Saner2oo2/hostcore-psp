@@ -24,7 +24,7 @@ TARGET			= launcher
 SRCS			= main.c
 OBJS			= $(SRCS:.c=.o)
 
-PSP_FW_VERSION	= 390
+PSP_FW_VERSION	= 401
 BUILD_PRX		= 1
 
 INCDIR			= 

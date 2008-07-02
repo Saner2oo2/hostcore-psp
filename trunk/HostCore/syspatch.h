@@ -24,9 +24,9 @@
 
 #pragma once
 
-extern void initPatches();
+extern int initPatches( void );
 
-extern unsigned int getFindDriverAddr();
+extern unsigned int getFindDriverAddr( void );
 
 extern void getCtrlNids( unsigned int * nid );
 
