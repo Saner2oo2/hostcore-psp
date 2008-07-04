@@ -30,8 +30,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-PSP_MODULE_INFO("HostCore_launcher", 0, 1, 1);
-PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
+PSP_MODULE_INFO( "HostCore_launcher", 0, 1, 1 );
+PSP_MAIN_THREAD_ATTR( THREAD_ATTR_USER );
 
 int buildArgs( char * args, int argc, char ** argv )
 {
