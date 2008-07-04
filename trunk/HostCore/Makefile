@@ -34,7 +34,7 @@ INCDIR			=
 LIBDIR			= 
 LDFLAGS			= -mno-crt0 -nostartfiles
 LIBS			= -lpspusb_driver -lpspreg_driver -lpspumd_driver
-CFLAGS			= -Os -G0 -Wall -fno-strict-aliasing -fno-builtin-printf -D_DEBUG=0
+CFLAGS			= -Os -G0 -Wall -fno-strict-aliasing -fno-builtin-printf -D_DEBUG=1
 CXXFLAGS		= $(CFLAGS) -fno-exceptions -fno-rtti
 ASFLAGS			= $(CFLAGS)
 

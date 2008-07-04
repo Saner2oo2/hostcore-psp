@@ -278,6 +278,8 @@ int msIoIoctl_new( PspIoDrvFileArg * arg, unsigned int cmd, void * indata, int i
 int msIoDopen_new( PspIoDrvFileArg * arg, const char * dirname )
 {
 	int ret = msIoDopen( arg, dirname );
+	if ( strstr( dirname , "/SAVEDATA" ) )
+		return ret;
 	if ( ret < 0 )
 	{
 		while( init_key == PSP_INIT_KEYCONFIG_POPS && !host_drv )
@@ -764,6 +766,7 @@ int LoadExecVSHCommon_new( int apitype, char * file, struct SceKernelLoadExecVSH
 			if ( fd < 0 )
 			{
 				argv[2] = umd_file;
+				param->args = buildArgs( args, 3, argv );
 				setUmdFile( "ms0:/HostCore/resources/fake.iso" );
 			}
 			sceIoClose( fd );
@@ -774,12 +777,12 @@ int LoadExecVSHCommon_new( int apitype, char * file, struct SceKernelLoadExecVSH
 			if ( fd < 0 )
 			{
 				argv[2] = file;
+				param->args = buildArgs( args, 3, argv );
 			}
 			sceIoClose( fd );
 		}
 		if ( argv[2] )
 		{
-			param->args = buildArgs( args, 3, argv );
 			param->argp = args;
 			return LoadExecVSHCommon( 0x141, LAUNCHER, param, 0x00010000 );
 		}

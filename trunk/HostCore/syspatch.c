@@ -102,7 +102,7 @@ void getUtilsNids( unsigned int * nid )
 		nid[1] = 0x5AF87B62;
 		nid[2] = 0x6274D0D5;
 		nid[3] = 0x313F2757;
-		nid[4] = 0x313F2757;
+		nid[4] = 0x83B28C87;
 	}
 }
 
@@ -183,7 +183,7 @@ void * patchLoadExecVSHCommon( void * func )
 	else if ( fw_version == FW_380 || fw_version == FW_390 )
 		LoadExecVSHCommon_ori[0].addr = pMod->text_addr + 0x000014cc; //same in standare/slim
 	else if ( fw_version == FW_401 )
-		LoadExecVSHCommon_ori[0].addr = pMod->text_addr + 0x00001D7C; //same in standare/slim
+		LoadExecVSHCommon_ori[0].addr = pMod->text_addr + 0x00001E1C; //same in standare/slim
 	LoadExecVSHCommon_ori[1].addr = LoadExecVSHCommon_ori[0].addr + 4;
 	LoadExecVSHCommon_ori[0].val = _lw( LoadExecVSHCommon_ori[0].addr );
 	LoadExecVSHCommon_ori[1].val = _lw( LoadExecVSHCommon_ori[1].addr );
@@ -194,21 +194,29 @@ void * patchLoadExecVSHCommon( void * func )
 	return ( void * )LoadExecVSHCommon_ori[0].addr;
 }
 
+unsigned int modulemgr_offset = 0, threadman_offset = 0;
+
 void wifiModulesPatch1()
 {
 	tSceModule * pMod = ( tSceModule * )sceKernelFindModuleByName( "sceThreadManager" );
 	//a0 = 4, change partition id to 4
 	if ( fw_version == FW_371 )
-		_sw( 0x34040004, pMod->text_addr + 0x00010B30 );
+		threadman_offset = 0x00010B30;
 	else if ( fw_version == FW_380 || fw_version == FW_390 )
-		_sw( 0x34040004, pMod->text_addr + 0x00010CB8 );
+		threadman_offset = 0x00010CB8;
+	else if ( fw_version == FW_401 )
+		threadman_offset = 0x00012154;
+	_sw( 0x34040004, pMod->text_addr + threadman_offset );
 
 	pMod = ( tSceModule * )sceKernelFindModuleByName( "sceModuleManager" );
 	//a3 stack size 0x40000 -> 0x10000
 	if ( fw_version == FW_371 )
-		_sw( 0x3C070001, pMod->text_addr + 0x000076A0);
+		modulemgr_offset = 0x000076A0;
 	else if ( fw_version == FW_380 || fw_version == FW_390 )
-		_sw( 0x3C070001, pMod->text_addr + 0x00007C9C );
+		modulemgr_offset = 0x00007C9C;
+	else if ( fw_version == FW_401 )
+		modulemgr_offset = 0x00007C50;
+	_sw( 0x3C070001, pMod->text_addr + modulemgr_offset );
 	sceKernelIcacheInvalidateAll();
 	sceKernelDcacheWritebackInvalidateAll();
 }
@@ -217,19 +225,21 @@ void wifiModulesPatch2()
 {
 	tSceModule * pMod = ( tSceModule * )sceKernelFindModuleByName( "sceNetInterface_Service" );
 	//a2 partid = 4 of ifhandler
-	_sw( 0x34050004, pMod->text_addr + 0x00001440 );  //for 3.71, 3.80, 3.90
+	_sw( 0x34050004, pMod->text_addr + 0x00001440 );  //for 3.71, 3.80, 3.90, 4.01
 
 	pMod = ( tSceModule * )sceKernelFindModuleByName( "sceNet_Library" );
-	_sw( 0x34020002, pMod->text_addr + 0x00001800 ); //for 3.71, 3.80, 3.90
-	_sw( 0xAFA20000, pMod->text_addr + 0x00001804 );
-	_sw( 0x3C020000, pMod->text_addr + 0x0000180C );
+	unsigned int net_offset = 0;
+	if ( fw_version == FW_371 || fw_version == FW_380 || fw_version == FW_390 )
+		net_offset = 0x00001800;
+	else if ( fw_version == FW_401 )
+		net_offset = 0x00002320;
+	_sw( 0x34020002, pMod->text_addr + net_offset );
+	_sw( 0xAFA20000, pMod->text_addr + net_offset + 0x4 );
+	_sw( 0x3C020000, pMod->text_addr + net_offset + 0xC );
 	
 	pMod = ( tSceModule * )sceKernelFindModuleByName( "sceModuleManager" );
 	//a3 stack size 0x10000 -> 0x4000
-	if ( fw_version == FW_371 )
-		_sw( 0x34074000, pMod->text_addr + 0x000076A0);
-	else if ( fw_version == FW_380 || fw_version == FW_390 )
-		_sw( 0x34074000, pMod->text_addr + 0x00007C9C );
+	_sw( 0x34074000, pMod->text_addr + modulemgr_offset );
 	sceKernelIcacheInvalidateAll();
 	sceKernelDcacheWritebackInvalidateAll();
 }
@@ -238,17 +248,11 @@ void wifiModulesPatch3()
 {
 	tSceModule * pMod = ( tSceModule * )sceKernelFindModuleByName( "sceModuleManager" );
 	//restore
-	if ( fw_version == FW_371 )
-		_sw( 0x02403821, pMod->text_addr + 0x000076A0);
-	else if ( fw_version == FW_380 || fw_version == FW_390 )
-		_sw( 0x02403821, pMod->text_addr + 0x00007C9C );
+	_sw( 0x02403821, pMod->text_addr + modulemgr_offset );
 
 	pMod = ( tSceModule * )sceKernelFindModuleByName( "sceThreadManager" );
 	//restore
-	if ( fw_version == FW_371 )
-		_sw( 0x02402021, pMod->text_addr + 0x00010B30 );
-	else if ( fw_version == FW_380 || fw_version == FW_390 )
-		_sw( 0x02402021, pMod->text_addr + 0x00010CB8 );
+	_sw( 0x02402021, pMod->text_addr + threadman_offset );
 	sceKernelIcacheInvalidateAll();
 	sceKernelDcacheWritebackInvalidateAll();
 }
