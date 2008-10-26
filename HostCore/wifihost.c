@@ -671,7 +671,7 @@ int startWifiHost( const char * name, HostCoreConf * config )
 	
 	if ( ctrl_opts->inited < 0 )
 	{
-		log( "Error on init wifiuser\n" );
+		log( "Error on init wifiuser (%08x)\n", ctrl_opts->inited );
 		stopWifiHost();
 		return -1;
 	}

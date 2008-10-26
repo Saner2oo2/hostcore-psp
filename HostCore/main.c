@@ -184,9 +184,11 @@ int hostfsIoOpen_new( PspIoDrvFileArg * arg, char * file, int flags, SceMode mod
 int msIoOpen_new( PspIoDrvFileArg * arg, char * file, int flags, SceMode mode )
 {
 	int ret = msIoOpen( arg, file, flags, mode );
+	if ( strstr( file , "/SAVEDATA" ) )
+		return ret;
 	if ( ret < 0 && ( flags & PSP_O_WRONLY ) == 0 )
 	{
-		while( init_key == PSP_INIT_KEYCONFIG_POPS && !host_drv )
+		while( host_mode && !host_drv )
 		{
 			log( "waiting for host %s\n", file );
 			sceKernelDelayThread( 1000000 );
@@ -263,11 +265,11 @@ int msIoIoctl_new( PspIoDrvFileArg * arg, unsigned int cmd, void * indata, int i
 	int num = isRedirected( arg );
 	if ( num >= 0 )
 	{
-		log( "ioctl %08x\n", ( unsigned int )arg->arg );
 		PspIoDrvArg * drv = arg->drv;
 		arg->drv = host_drv;
 		int ret = hostfs_drv->funcs->IoIoctl( arg, cmd, indata, inlen, outdata, outlen );
 		arg->drv = drv;
+		log( "ioctl %08x %08x %08x\n", ( unsigned int )arg->arg, cmd, ret );
 		if ( ret < 0 )
 			ret = 0;
 		return ret;
@@ -282,7 +284,7 @@ int msIoDopen_new( PspIoDrvFileArg * arg, const char * dirname )
 		return ret;
 	if ( ret < 0 )
 	{
-		while( init_key == PSP_INIT_KEYCONFIG_POPS && !host_drv )
+		while( host_mode && !host_drv )
 		{
 			log( "waiting for host %s\n", dirname );
 			sceKernelDelayThread( 1000000 );
@@ -396,10 +398,12 @@ int msIoDread_new( PspIoDrvFileArg * arg, SceIoDirent * dir )
 int msIoGetstat_new( PspIoDrvFileArg * arg, const char * file, SceIoStat * stat )
 {
 	int ret = msIoGetstat( arg, file, stat );
+	if ( strstr( file , "/SAVEDATA" ) )
+		return ret;
 	if ( ret < 0 )
 	{
 		log( "getstat %s\n", file );
-		while( init_key == PSP_INIT_KEYCONFIG_POPS && !host_drv )
+		while( host_mode && !host_drv )
 		{
 			log( "waiting for host %s\n", file );
 			sceKernelDelayThread( 1000000 );
@@ -657,7 +661,6 @@ int main_thread( SceSize args, void *argp )
 		{
 			initUmdImageDriver();
 			mountUmdImage( exec );
-			sceKernelDelayThread( 500000 );
 			ret = launchUmdImage();
 		}
 		if ( ret < 0 )
@@ -666,6 +669,7 @@ int main_thread( SceSize args, void *argp )
 			restoreIoDrv();
 			stopHost( host_mode );
 			exitVshWithError( ret );
+			return 0;
 		}
 		int cbid;
 		while( ( cbid = sceKernelCheckExitCallback() ) == 0 )

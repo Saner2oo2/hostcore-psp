@@ -6,7 +6,7 @@
 http://www.2alien.info
 http://www.2alien.net
 
-HostCore 1.1 for 3.80+ by Poison
+HostCore 1.2 for 3.80+ by Poison
 ==============================
 
 A module "bridges" your PC contents to PSP XMB
@@ -16,6 +16,8 @@ With HostCore enabled, you can access your files which locate at PC via USBHostF
 
 
 -=UPDATE=-
+1.2:
++add 5.00m33 support.
 1.1:
 + add 3.80m33 support.
 + improve wifi compatibility in playing game(bug #0008 some games might not start on wifi mode due to some user memory issues fixed).

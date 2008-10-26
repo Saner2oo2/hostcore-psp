@@ -23,7 +23,7 @@
 TARGET			= hostcore
 OBJS			= main.o utils.o syspatch.o ctrl.o conf.o mem.o umd.o usbhost.o wifihost.o tinyui.o log.o
 
-PSP_FW_VERSION	= 401
+PSP_FW_VERSION	= 500
 BUILD_PRX		= 1
 USE_KERNEL_LIBC	= 1
 USE_KERNEL_LIBS = 1
@@ -34,7 +34,7 @@ INCDIR			=
 LIBDIR			= 
 LDFLAGS			= -mno-crt0 -nostartfiles
 LIBS			= -lpspusb_driver -lpspreg_driver -lpspumd_driver
-CFLAGS			= -Os -G0 -Wall -fno-strict-aliasing -fno-builtin-printf -D_DEBUG=1
+CFLAGS			= -Os -G0 -Wall -fno-strict-aliasing -fno-builtin-printf -D_DEBUG=0
 CXXFLAGS		= $(CFLAGS) -fno-exceptions -fno-rtti
 ASFLAGS			= $(CFLAGS)
 
@@ -42,7 +42,7 @@ PSPSDK			= $(shell psp-config --pspsdk-path)
 include $(PSPSDK)/lib/build.mak
 
 clean-release:
-	rm -rf HostCore_1.1.tar.gz
+	rm -rf HostCore_1.2.tar.gz
 	rm -rf release
 
 release: wifi usb launcher-eboot clean all clean-release
@@ -58,7 +58,7 @@ release: wifi usb launcher-eboot clean all clean-release
 	rm -rf release/HostCore/resources/.svn
 	find release -type f -name '.*' -exec rm -f {} \;
 	find release -type d -name '.*' -exec rm -rf {} \;
-	tar czf HostCore_1.1.tar.gz release/
+	tar czf HostCore_1.2.tar.gz release/
 	
 launcher-eboot:
 	$(MAKE) -C launcher clean
