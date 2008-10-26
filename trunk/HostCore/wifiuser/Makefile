@@ -23,7 +23,7 @@
 TARGET			= wifiuser
 OBJS			= main.o ../log.o
 
-PSP_FW_VERSION	= 401
+PSP_FW_VERSION	= 500
 BUILD_PRX		= 1
 USE_PSPSDK_LIBC	= 1
 USE_PSPSDK_LIBS = 1

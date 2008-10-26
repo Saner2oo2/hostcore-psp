@@ -37,8 +37,11 @@
 #include <w32api/mmsystem.h>
 #endif
 
-#if defined BUILD_BIGENDIAN || defined _BIG_ENDIAN	//Poison Add for OSX
+#if defined _MAXOSX_
 #include <netdb.h> 
+#endif
+
+#if defined BUILD_BIGENDIAN || defined _BIG_ENDIAN	//Poison Add for OSX
 #include "swap.h"
 #endif
 

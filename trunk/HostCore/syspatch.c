@@ -34,6 +34,7 @@
 #include "utils.h"
 
 int fw_version = FW_371;
+int model = PSP_MODEL_STANDARD;
 
 int ( * getDevkitVersion )( void );
 
@@ -41,6 +42,9 @@ int initPatches( void )
 {
 	getDevkitVersion = ( void * )findProc( "sceSystemMemoryManager", "SysMemUserForUser", 0x3FC9AE6A );
 	fw_version = getDevkitVersion();
+	model = sceKernelGetModel();
+	//Disable slim specific patches
+	model = PSP_MODEL_STANDARD;
 	return fw_version;
 }
 
@@ -56,6 +60,8 @@ unsigned int getFindDriverAddr( void )
 		addr = pMod->text_addr + 0x00002808;
 	else if ( fw_version == FW_401 )
 		addr = pMod->text_addr + 0x000027EC;
+	else if ( fw_version == FW_500 )
+		addr = pMod->text_addr + 0x00002838;
 	return addr;
 }
 
@@ -75,6 +81,11 @@ void getCtrlNids( unsigned int * nid )
 	{
 		nid[0] = 0xBA664B5E;
 		nid[1] = 0x591B3F36;
+	}
+	else if ( fw_version == FW_500 )
+	{
+		nid[0] = 0x919215D7;
+		nid[1] = 0x6B247CCE;
 	}
 }
 
@@ -104,6 +115,14 @@ void getUtilsNids( unsigned int * nid )
 		nid[3] = 0x313F2757;
 		nid[4] = 0x83B28C87;
 	}
+	else if ( fw_version == FW_500 )
+	{
+		nid[0] = 0x94A1C627;
+		nid[1] = 0x71F9FB1B;
+		nid[2] = 0x2E96EDF8;
+		nid[3] = 0xB8E49712;
+		nid[4] = 0x7C8A2B62;
+	}
 }
 
 unsigned int getKillMutexNid()
@@ -128,11 +147,18 @@ void getDisplayNids( unsigned int * nid )
 		nid[0] = 0xC28EFAA7;
 		nid[1] = 0xC922270C;
 	}
+	else if ( fw_version == FW_500 )
+	{
+		nid[0] = 0xD8D2FD35;
+		nid[1] = 0xFBDA7A1E;
+	}
 }
 
 void patchMemPartitionInfo()
 {
-	sceKernelSetDdrMemoryProtection( ( void * )0x88300000, 0x00100000, 0xf );
+	if ( model == PSP_MODEL_STANDARD )
+		sceKernelSetDdrMemoryProtection( ( void * )0x88300000, 0x00100000, 0xf );
+	else sceKernelSetDdrMemoryProtection( ( void * )0x88600000, 0x00200000, 0xf );
 	tSceModule * pMod = ( tSceModule * )sceKernelFindModuleByName( "sceSystemMemoryManager" );
 	// 0x02001021 move $v0 $s0
 	int offset = 0x00001304;
@@ -144,6 +170,10 @@ void patchMemPartitionInfo()
 	{
 		offset = 0x00003A68; //for 4.01
 	}
+	else if ( fw_version == FW_500 )
+	{
+		offset = 0x00003AA8; //for 5.00
+	}
 	_sw( 0x02001021, pMod->text_addr + offset );
 	sceKernelIcacheInvalidateAll();
 	sceKernelDcacheWritebackInvalidateAll();
@@ -151,7 +181,9 @@ void patchMemPartitionInfo()
 	memset( &info, 0, sizeof( PspSysmemPartitionInfo ) );
 	info.size = sizeof( PspSysmemPartitionInfo );
 	PspSysmemPartitionInfo * p_info = ( PspSysmemPartitionInfo * )sceKernelQueryMemoryPartitionInfo( 4, &info );
-	p_info->startaddr = 0x08300000;
+	if ( model == PSP_MODEL_STANDARD )
+		p_info->startaddr = 0x08300000;
+	else p_info->startaddr = 0x08600000;
 	p_info->attr = 0xf;
 	//restore
 	_sw( 0x00001021, pMod->text_addr + offset );
@@ -184,6 +216,8 @@ void * patchLoadExecVSHCommon( void * func )
 		LoadExecVSHCommon_ori[0].addr = pMod->text_addr + 0x000014cc; //same in standare/slim
 	else if ( fw_version == FW_401 )
 		LoadExecVSHCommon_ori[0].addr = pMod->text_addr + 0x00001E1C; //same in standare/slim
+	else if ( fw_version == FW_500 )
+		LoadExecVSHCommon_ori[0].addr = pMod->text_addr + 0x00001E58; //verified in phat
 	LoadExecVSHCommon_ori[1].addr = LoadExecVSHCommon_ori[0].addr + 4;
 	LoadExecVSHCommon_ori[0].val = _lw( LoadExecVSHCommon_ori[0].addr );
 	LoadExecVSHCommon_ori[1].val = _lw( LoadExecVSHCommon_ori[1].addr );
@@ -206,6 +240,8 @@ void wifiModulesPatch1()
 		threadman_offset = 0x00010CB8;
 	else if ( fw_version == FW_401 )
 		threadman_offset = 0x00012154;
+	else if ( fw_version == FW_500 )
+		threadman_offset = 0x000121E0;
 	_sw( 0x34040004, pMod->text_addr + threadman_offset );
 
 	pMod = ( tSceModule * )sceKernelFindModuleByName( "sceModuleManager" );
@@ -216,6 +252,8 @@ void wifiModulesPatch1()
 		modulemgr_offset = 0x00007C9C;
 	else if ( fw_version == FW_401 )
 		modulemgr_offset = 0x00007C50;
+	else if ( fw_version == FW_500 )
+		modulemgr_offset = 0x00007C84;
 	_sw( 0x3C070001, pMod->text_addr + modulemgr_offset );
 	sceKernelIcacheInvalidateAll();
 	sceKernelDcacheWritebackInvalidateAll();
@@ -224,8 +262,8 @@ void wifiModulesPatch1()
 void wifiModulesPatch2()
 {
 	tSceModule * pMod = ( tSceModule * )sceKernelFindModuleByName( "sceNetInterface_Service" );
-	//a2 partid = 4 of ifhandler
-	_sw( 0x34050004, pMod->text_addr + 0x00001440 );  //for 3.71, 3.80, 3.90, 4.01
+	//a2 partid = 4 of ifhandle
+	_sw( 0x34050004, pMod->text_addr + 0x00001440 );  //for 3.71, 3.80, 3.90, 4.01, 5.00
 
 	pMod = ( tSceModule * )sceKernelFindModuleByName( "sceNet_Library" );
 	unsigned int net_offset = 0;
@@ -233,6 +271,8 @@ void wifiModulesPatch2()
 		net_offset = 0x00001800;
 	else if ( fw_version == FW_401 )
 		net_offset = 0x00002320;
+	else if ( fw_version == FW_500 )
+		net_offset = 0x00002348;
 	_sw( 0x34020002, pMod->text_addr + net_offset );
 	_sw( 0xAFA20000, pMod->text_addr + net_offset + 0x4 );
 	_sw( 0x3C020000, pMod->text_addr + net_offset + 0xC );

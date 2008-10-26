@@ -23,12 +23,14 @@
  */
 
 #include <pspkernel.h>
+#include <pspinit.h>
 #include <pspusb.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "syspatch.h"
 #include "utils.h"
 #include "log.h"
 
@@ -47,12 +49,17 @@ int startUsbHost()
 			return -1;
 		}
 	}
-	int ret = sceUsbStart( PSP_USBBUS_DRIVERNAME, 0, 0 );
-	if ( ret != 0 )
+	int ret;
+	if ( fw_version < FW_500 || sceKernelInitKeyConfig() == PSP_INIT_KEYCONFIG_GAME )
 	{
-		log( "Error starting USB Bus driver (0x%08X)\n", ret );
-		return -1;
+		ret = sceUsbStart( PSP_USBBUS_DRIVERNAME, 0, 0 );
+		if ( ret != 0 )
+		{
+			log( "Error starting USB Bus driver (0x%08X)\n", ret );
+			return -1;
+		}
 	}
+
 	ret = sceUsbStart( HOSTFSDRIVER_NAME, 0, 0 );
 	if ( ret != 0 )
 	{
@@ -78,11 +85,14 @@ int stopUsbHost()
 		log( "Error stopping USB Host driver (0x%08X)\n", ret );
 		//return -1;
 	}
-	sceUsbStop(PSP_USBBUS_DRIVERNAME, 0, 0);
-	if ( ret != 0 )
+	if ( fw_version < FW_500 || sceKernelInitKeyConfig() == PSP_INIT_KEYCONFIG_GAME )
 	{
-		log( "Error stopping USB Bus driver (0x%08X)\n", ret );
-		//return -1;
+		sceUsbStop(PSP_USBBUS_DRIVERNAME, 0, 0);
+		if ( ret != 0 )
+		{
+			log( "Error stopping USB Bus driver (0x%08X)\n", ret );
+			//return -1;
+		}
 	}
 	killModule( "USBHostFS" );
 	return 0;
