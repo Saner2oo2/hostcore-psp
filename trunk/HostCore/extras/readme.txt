@@ -75,7 +75,7 @@ In wifi case, only infrastructure mode connection support.
 
 
 -=CREDIT=-
-Thanks to Matchung, Gilleco, Cooleyes, Real.KK, SilverSpring for advise and testing.
+Thanks to Matchung, drkIIRaziel, Gilleco, Cooleyes, Real.KK, SilverSpring for advise and testing.
 Thanks to everyone who has contributed to nethostfs, usbhostfs.
 Thanks to everyone who has contributed to the PSPSDK.
 Thanks to everyone who has contributed to PSP CFW.
