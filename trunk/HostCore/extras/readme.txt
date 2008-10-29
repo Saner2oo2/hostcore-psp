@@ -6,7 +6,7 @@
 http://www.2alien.info
 http://www.2alien.net
 
-HostCore 1.2 for 3.80+ by Poison
+HostCore 1.2.1 for 3.80+ by Poison
 ==============================
 
 A module "bridges" your PC contents to PSP XMB
@@ -16,6 +16,8 @@ With HostCore enabled, you can access your files which locate at PC via USBHostF
 
 
 -=UPDATE=-
+1.2.1:
+- fix bug#0011(Can't connect to nethost with WPA protected network setting)
 1.2:
 +add 5.00m33 support.
 1.1:
