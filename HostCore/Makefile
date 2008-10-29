@@ -42,7 +42,7 @@ PSPSDK			= $(shell psp-config --pspsdk-path)
 include $(PSPSDK)/lib/build.mak
 
 clean-release:
-	rm -rf HostCore_1.2.tar.gz
+	rm -rf HostCore_1.2.1.tar.gz
 	rm -rf release
 
 release: wifi usb launcher-eboot clean all clean-release

@@ -91,11 +91,14 @@ int connectApctl( int config )
 			log( "connection state %d\n", stat );
 			stat_last = stat;
 		}
+		/*
+		//WPA connections go to state >4 (6 iirc) before going to 4
+		//this check kills support for em
 		if ( stat < stat_last )
 		{
 			ret = -1;
 			break;
-		}
+		}*/
 		if ( stat == 4 )
 			break;
 		sceKernelDelayThread( 50000 );
