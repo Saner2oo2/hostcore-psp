@@ -60,7 +60,7 @@ unsigned int getFindDriverAddr( void )
 		addr = pMod->text_addr + 0x00002808;
 	else if ( fw_version == FW_401 )
 		addr = pMod->text_addr + 0x000027EC;
-	else if ( fw_version == FW_500 )
+	else if ( fw_version == FW_500 || fw_version == FW_550 )
 		addr = pMod->text_addr + 0x00002838;
 	return addr;
 }
@@ -82,7 +82,7 @@ void getCtrlNids( unsigned int * nid )
 		nid[0] = 0xBA664B5E;
 		nid[1] = 0x591B3F36;
 	}
-	else if ( fw_version == FW_500 )
+	else if ( fw_version == FW_500 || fw_version == FW_550 )
 	{
 		nid[0] = 0x919215D7;
 		nid[1] = 0x6B247CCE;
@@ -115,7 +115,7 @@ void getUtilsNids( unsigned int * nid )
 		nid[3] = 0x313F2757;
 		nid[4] = 0x83B28C87;
 	}
-	else if ( fw_version == FW_500 )
+	else if ( fw_version == FW_500 || fw_version == FW_550 )
 	{
 		nid[0] = 0x94A1C627;
 		nid[1] = 0x71F9FB1B;
@@ -147,7 +147,7 @@ void getDisplayNids( unsigned int * nid )
 		nid[0] = 0xC28EFAA7;
 		nid[1] = 0xC922270C;
 	}
-	else if ( fw_version == FW_500 )
+	else if ( fw_version == FW_500 || fw_version == FW_550 )
 	{
 		nid[0] = 0xD8D2FD35;
 		nid[1] = 0xFBDA7A1E;
@@ -170,7 +170,7 @@ void patchMemPartitionInfo()
 	{
 		offset = 0x00003A68; //for 4.01
 	}
-	else if ( fw_version == FW_500 )
+	else if ( fw_version == FW_500 || fw_version == FW_550 )
 	{
 		offset = 0x00003AA8; //for 5.00
 	}
@@ -218,6 +218,8 @@ void * patchLoadExecVSHCommon( void * func )
 		LoadExecVSHCommon_ori[0].addr = pMod->text_addr + 0x00001E1C; //same in standare/slim
 	else if ( fw_version == FW_500 )
 		LoadExecVSHCommon_ori[0].addr = pMod->text_addr + 0x00001E58; //verified in phat
+	else if ( fw_version == FW_550 )
+		LoadExecVSHCommon_ori[0].addr = pMod->text_addr + 0x00001F3C; //same on slim & phat
 	LoadExecVSHCommon_ori[1].addr = LoadExecVSHCommon_ori[0].addr + 4;
 	LoadExecVSHCommon_ori[0].val = _lw( LoadExecVSHCommon_ori[0].addr );
 	LoadExecVSHCommon_ori[1].val = _lw( LoadExecVSHCommon_ori[1].addr );
@@ -240,7 +242,7 @@ void wifiModulesPatch1()
 		threadman_offset = 0x00010CB8;
 	else if ( fw_version == FW_401 )
 		threadman_offset = 0x00012154;
-	else if ( fw_version == FW_500 )
+	else if ( fw_version == FW_500 || fw_version == FW_550 )
 		threadman_offset = 0x000121E0;
 	_sw( 0x34040004, pMod->text_addr + threadman_offset );
 
@@ -254,16 +256,22 @@ void wifiModulesPatch1()
 		modulemgr_offset = 0x00007C50;
 	else if ( fw_version == FW_500 )
 		modulemgr_offset = 0x00007C84;
+	//added for 5.50
+	else if ( fw_version == FW_550 )
+		modulemgr_offset = 0x00007F80;
 	_sw( 0x3C070001, pMod->text_addr + modulemgr_offset );
 	sceKernelIcacheInvalidateAll();
 	sceKernelDcacheWritebackInvalidateAll();
 }
 
 void wifiModulesPatch2()
-{
-	tSceModule * pMod = ( tSceModule * )sceKernelFindModuleByName( "sceNetInterface_Service" );
+{	
+	//tSceModule * pMod = ( tSceModule * )sceKernelFindModuleByName( "sceNetInterface_Service" ); // cfw 5.0
+	tSceModule * pMod = ( tSceModule * )sceKernelFindModuleByName( "sceNet_Service" ); // cfw 5.50
 	//a2 partid = 4 of ifhandle
-	_sw( 0x34050004, pMod->text_addr + 0x00001440 );  //for 3.71, 3.80, 3.90, 4.01, 5.00
+	//offset changed in 5.50
+	//_sw( 0x34050004, pMod->text_addr + 0x00001440 );  //for 3.71, 3.80, 3.90, 4.01, 5.00
+	_sw( 0x34050004, pMod->text_addr + 0x000014D8 );  //for 5.50
 
 	pMod = ( tSceModule * )sceKernelFindModuleByName( "sceNet_Library" );
 	unsigned int net_offset = 0;
@@ -271,7 +279,7 @@ void wifiModulesPatch2()
 		net_offset = 0x00001800;
 	else if ( fw_version == FW_401 )
 		net_offset = 0x00002320;
-	else if ( fw_version == FW_500 )
+	else if ( fw_version == FW_500 || fw_version == FW_550 )
 		net_offset = 0x00002348;
 	_sw( 0x34020002, pMod->text_addr + net_offset );
 	_sw( 0xAFA20000, pMod->text_addr + net_offset + 0x4 );
