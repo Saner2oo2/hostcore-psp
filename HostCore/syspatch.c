@@ -156,8 +156,7 @@ void getDisplayNids( unsigned int * nid )
 
 void patchMemPartitionInfo()
 {
-	if ( model == PSP_MODEL_STANDARD )
-		sceKernelSetDdrMemoryProtection( ( void * )0x88300000, 0x00100000, 0xf );
+	if ( model == PSP_MODEL_STANDARD ) sceKernelSetDdrMemoryProtection( ( void * )0x88300000, 0x00100000, 0xf );
 	else sceKernelSetDdrMemoryProtection( ( void * )0x88600000, 0x00200000, 0xf );
 	tSceModule * pMod = ( tSceModule * )sceKernelFindModuleByName( "sceSystemMemoryManager" );
 	// 0x02001021 move $v0 $s0
@@ -181,8 +180,7 @@ void patchMemPartitionInfo()
 	memset( &info, 0, sizeof( PspSysmemPartitionInfo ) );
 	info.size = sizeof( PspSysmemPartitionInfo );
 	PspSysmemPartitionInfo * p_info = ( PspSysmemPartitionInfo * )sceKernelQueryMemoryPartitionInfo( 4, &info );
-	if ( model == PSP_MODEL_STANDARD )
-		p_info->startaddr = 0x08300000;
+	if ( model == PSP_MODEL_STANDARD ) p_info->startaddr = 0x08300000;
 	else p_info->startaddr = 0x08600000;
 	p_info->attr = 0xf;
 	//restore
@@ -266,12 +264,15 @@ void wifiModulesPatch1()
 
 void wifiModulesPatch2()
 {	
-	//tSceModule * pMod = ( tSceModule * )sceKernelFindModuleByName( "sceNetInterface_Service" ); // cfw 5.0
-	tSceModule * pMod = ( tSceModule * )sceKernelFindModuleByName( "sceNet_Service" ); // cfw 5.50
-	//a2 partid = 4 of ifhandle
-	//offset changed in 5.50
-	//_sw( 0x34050004, pMod->text_addr + 0x00001440 );  //for 3.71, 3.80, 3.90, 4.01, 5.00
-	_sw( 0x34050004, pMod->text_addr + 0x000014D8 );  //for 5.50
+	if ( fw_version == FW_550 ) {
+            //module renamed to sceNet_Service in 5.50
+            pMod = ( tSceModule * )sceKernelFindModuleByName( "sceNet_Service" );
+        	//a2 partid = 4 of ifhandle
+            _sw( 0x34050004, pMod->text_addr + 0x000014D8 );  //for 5.50
+    } else {
+            pMod = ( tSceModule * )sceKernelFindModuleByName( "sceNetInterface_Service" );
+            _sw( 0x34050004, pMod->text_addr + 0x00001440 );  //for 3.71, 3.80, 3.90, 4.01, 5.00
+    }
 
 	pMod = ( tSceModule * )sceKernelFindModuleByName( "sceNet_Library" );
 	unsigned int net_offset = 0;
