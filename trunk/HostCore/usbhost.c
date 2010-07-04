@@ -50,7 +50,7 @@ int startUsbHost()
 		}
 	}
 	int ret;
-	if ( fw_version < FW_500 || sceKernelInitKeyConfig() == PSP_INIT_KEYCONFIG_GAME )
+	if ( fw_version < FW_550 || sceKernelInitKeyConfig() == PSP_INIT_KEYCONFIG_GAME )
 	{
 		ret = sceUsbStart( PSP_USBBUS_DRIVERNAME, 0, 0 );
 		if ( ret != 0 )
@@ -85,7 +85,7 @@ int stopUsbHost()
 		log( "Error stopping USB Host driver (0x%08X)\n", ret );
 		//return -1;
 	}
-	if ( fw_version < FW_500 || sceKernelInitKeyConfig() == PSP_INIT_KEYCONFIG_GAME )
+	if ( fw_version < FW_550 || sceKernelInitKeyConfig() == PSP_INIT_KEYCONFIG_GAME )
 	{
 		sceUsbStop(PSP_USBBUS_DRIVERNAME, 0, 0);
 		if ( ret != 0 )
