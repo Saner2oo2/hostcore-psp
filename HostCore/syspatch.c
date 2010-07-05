@@ -266,15 +266,15 @@ void wifiModulesPatch2()
 {	
 	if ( fw_version == FW_550 ) {
             //module renamed to sceNet_Service in 5.50
-            pMod = ( tSceModule * )sceKernelFindModuleByName( "sceNet_Service" );
+		tSceModule *  pMod = ( tSceModule * )sceKernelFindModuleByName( "sceNet_Service" );
         	//a2 partid = 4 of ifhandle
             _sw( 0x34050004, pMod->text_addr + 0x000014D8 );  //for 5.50
     } else {
-            pMod = ( tSceModule * )sceKernelFindModuleByName( "sceNetInterface_Service" );
+    	tSceModule *  pMod = ( tSceModule * )sceKernelFindModuleByName( "sceNetInterface_Service" );
             _sw( 0x34050004, pMod->text_addr + 0x00001440 );  //for 3.71, 3.80, 3.90, 4.01, 5.00
     }
 
-	pMod = ( tSceModule * )sceKernelFindModuleByName( "sceNet_Library" );
+	tSceModule * pMod = ( tSceModule * )sceKernelFindModuleByName( "sceNet_Library" );
 	unsigned int net_offset = 0;
 	if ( fw_version == FW_371 || fw_version == FW_380 || fw_version == FW_390 )
 		net_offset = 0x00001800;
